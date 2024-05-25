@@ -106,6 +106,10 @@ train<-read.csv("train.csv")
 
 ## 4 Utilizar información descripción para cubrir missings
 
+##Unir variables de texto title y train
+train <- train %>%
+mutate(description = paste(title, description))
+
 ## 4.1función para reemplazar palabras por numeros
 reemplazar_numeros <- function(texto) {
   # Diccionario de números en texto y sus correspondientes dígitos
@@ -209,15 +213,15 @@ train$bano<- as.numeric(gsub("[^0-9]", "", train$bano))
 library(dplyr)
 train <- train %>%
   mutate(surface_total = ifelse(is.na(surface_total), metraje, surface_total))
-sum(table(train$surface_total))#20376
+sum(table(train$surface_total))#20752
 
 train <- train %>%
   mutate(rooms = ifelse(is.na(rooms), alcobas, rooms))
-sum(table(train$rooms))#33745
+sum(table(train$rooms))#33833
 
 train <- train %>%
   mutate(bathrooms = ifelse(is.na(bathrooms), bano, bathrooms))
-sum(table(train$bathrooms))#32900
+sum(table(train$bathrooms))#32941
 
 ## 5. Añadir variables adicionales a partir de la descripción
 
@@ -302,15 +306,64 @@ train %>%
   )
 
 
-## 5.8 estrato
-#nota: tiene muchos missing, por lo que puede ser mejor incluir esa variable con datos espaciales
-# k1 <- "estrato+[:space:]+[:digit:]" 
-# k2 <- "[:space:]+estrato+[:digit:]"
-# k3 <- "[:space:]+estrato+[:space:]+[:digit:]"
-# 
-# train<-train %>% mutate(estrato = str_extract(string = train$description_num,
-#                                            pattern =  paste0(k1,"|",k2,"|",k3)))
-# train$estrato<- as.numeric(gsub("[^0-9]", "", train$estrato))
+## 5.8 estrato  (Incluye análisis tanto espacial como de texto)
+
+train$lat1<-train$lat
+train$lon1<-train$lon
+library(sf)
+
+#cargar información de estratificación de manzanas obtenida de https://datosabiertos.bogota.gov.co/dataset/estratificacion-para-bogota
+manzanas<-  st_read("manzanaestratificacion.json")
+#crear puntos de inmuebles
+train <- st_as_sf(train, coords = c("lon1", "lat1"), crs = 4326)
+#alinear tipo coordenadas entre bases y confirmar que quedaron en el mismo sistema de coordenadas
+manzanas <- st_transform(manzanas, 4326)
+st_crs(manzanas) == st_crs(train)
+sf_use_s2(FALSE)
+#extraer información de manzanas para inmuebles
+train <- st_join(train, manzanas, join = st_within)
+
+#revisar missings de estrato
+sum(is.na(train$ESTRATO))#13163 missings
+
+#función para añadir estrato por barrio
+barrio_estrato <- function(texto) {
+  # Diccionario de barrios y sus estratos respectivos
+  b_e <- c(
+    " salitre " = " estrato 4 ", " calleja "=" estrato 5 "," hayuelos "=" estrato 4 ", " batan " = " estrato 5 ", 
+    " santa barbara " = " estrato 6 "," tejar "=" estrato 3 "," alcala " = " estrato 3 "," cedritos " = " estrato 4 ",
+    " usaquen " = " estrato 4 "," usaqun " = " estrato 4 ", " teusaquillo " = " estrato 4 "," bella suiza " = " estrato 5 ", 
+    " santa paula " = " estrato 6 ", " centro " = " estrato 2 " ," engativa " = " estrato 3 "
+  )
+  
+  # Reemplazar barrios en texto por estratos
+  for (word in names(b_e)) {
+    texto <- gsub(word, b_e[[word]], texto, ignore.case = TRUE)
+  }
+  
+  return(texto)
+}
+
+#aplicar función de estratos a base train 
+train$description_estrato<-barrio_estrato(train$description_num)
+
+#extraer información de estrato de la descripción
+k1 <- "estrato+[:space:]+[:digit:]"
+k2 <- "[:space:]+estrato+[:digit:]"
+k3 <- "[:space:]+estrato+[:space:]+[:digit:]"
+
+train<-train %>% mutate(estrato_texto = str_extract(string = train$description_estrato,
+                                                pattern =  paste0(k1,"|",k2,"|",k3)))
+train$estrato_texto<- as.numeric(gsub("[^0-9]", "", train$estrato_texto))
+
+
+#revisar missings de estrato a partir de descripción
+sum(is.na(train$estrato_texto))#20263 missings
+
+library(dplyr)
+train <- train %>%
+  mutate(ESTRATO = ifelse(is.na(ESTRATO), estrato_texto, ESTRATO))
+sum(is.na(train$ESTRATO))#7108 missings
 
 
 ## 5.9 años de construido 
@@ -330,6 +383,7 @@ train %>%
 #identificar nuevas medias
 #mediana_sup_cubierta <- median(train$surface_covered, na.rm = TRUE)
 mediana_sup_total<- median(train$surface_total, na.rm = TRUE)
+mediana_estrato<- median(train$ESTRATO, na.rm = TRUE)
 stargazer(train,type="text")
 
 #reemplazar medias en missings
@@ -337,9 +391,9 @@ process_missings<-  function(data, ...) {
   
   data <- data %>%
     mutate(rooms = replace_na(rooms, 3),
-           bedrooms = replace_na(bedrooms, 3),
            bathrooms = replace_na(bathrooms, 2),
            #surface_covered = replace_na(surface_covered, mediana_sup_cubierta),
+           ESTRATO=replace_na(ESTRATO,mediana_estrato),
            surface_total = replace_na(surface_total, mediana_sup_total),
     )
 }
@@ -366,8 +420,6 @@ train %>%
 train <- train %>%
   filter(between(rooms, 0,  20))
 
-train %>%
-  count(bedrooms)
 
 ## 7.3 outliers de baños
 #nota:aquí la base cae a 38401
@@ -391,11 +443,17 @@ train <- train %>%
   filter(between(precio_por_mt2, 0.10,  20))
 
 train <- train %>%
-  select(-surface_covered, -metraje, -alcobas,-bano)
+  select(-surface_covered, -metraje, -alcobas,-bano, -FID,-OBJECTID,-CODIGO_MAN,-CODIGO_ZON,-CODIGO_CRI,
+         -NORMATIVA,-ACTO_ADMIN,-NUMERO_ACT,-FECHA_ACTO,-ESCALA_CAP,-FECHA_CAPT,-RESPONSABL,-SHAPE_AREA,
+         -SHAPE_LEN,-estrato_texto,-description_estrato,-description,-title)
 vis_dat(train, warn_large_data = FALSE)
 
 ######################## Cambios a para base test ########################################################
 test<-read.csv("test.csv")
+
+##Unir variables de texto title y test
+test <- test %>%
+  mutate(description = paste(title, description))
 
 ## 8 Utilizar información descripción para cubrir missings
 #Nota: la base inicia con 10286 obs
@@ -594,6 +652,65 @@ test %>%
     min = min(piso, na.rm = TRUE),
     max = max(piso, na.rm = TRUE)
   )
+
+## 9.8 estrato  (Incluye análisis tanto espacial como de texto)
+
+test$lat1<-test$lat
+test$lon1<-test$lon
+library(sf)
+
+#cargar información de estratificación de manzanas obtenida de https://datosabiertos.bogota.gov.co/dataset/estratificacion-para-bogota
+manzanas<-  st_read("manzanaestratificacion.json")
+#crear puntos de inmuebles
+test <- st_as_sf(test, coords = c("lon1", "lat1"), crs = 4326)
+#alinear tipo coordenadas entre bases y confirmar que quedaron en el mismo sistema de coordenadas
+manzanas <- st_transform(manzanas, 4326)
+st_crs(manzanas) == st_crs(test)
+sf_use_s2(FALSE)
+#extraer información de manzanas para inmuebles
+test <- st_join(test, manzanas, join = st_within)
+
+#revisar missings de estrato
+sum(is.na(test$ESTRATO))#13163 missings
+
+#función para añadir estrato por barrio
+barrio_estrato <- function(texto) {
+  # Diccionario de barrios y sus estratos respectivos
+  b_e <- c(
+    " salitre " = " estrato 4 ", " calleja "=" estrato 5 "," hayuelos "=" estrato 4 ", " batan " = " estrato 5 ", 
+    " santa barbara " = " estrato 6 "," tejar "=" estrato 3 "," alcala " = " estrato 3 "," cedritos " = " estrato 4 ",
+    " usaquen " = " estrato 4 "," usaqun " = " estrato 4 ", " teusaquillo " = " estrato 4 "," bella suiza " = " estrato 5 ", 
+    " santa paula " = " estrato 6 ", " centro " = " estrato 2 " ," engativa " = " estrato 3 "
+  )
+  
+  # Reemplazar barrios en texto por estratos
+  for (word in names(b_e)) {
+    texto <- gsub(word, b_e[[word]], texto, ignore.case = TRUE)
+  }
+  
+  return(texto)
+}
+
+#aplicar función de estratos a base train 
+test$description_estrato<-barrio_estrato(test$description_num)
+
+#extraer información de estrato de la descripción
+k1 <- "estrato+[:space:]+[:digit:]"
+k2 <- "[:space:]+estrato+[:digit:]"
+k3 <- "[:space:]+estrato+[:space:]+[:digit:]"
+
+test<-test %>% mutate(estrato_texto = str_extract(string = test$description_estrato,
+                                                    pattern =  paste0(k1,"|",k2,"|",k3)))
+test$estrato_texto<- as.numeric(gsub("[^0-9]", "", test$estrato_texto))
+
+
+#revisar missings de estrato a partir de descripción
+sum(is.na(test$estrato_texto))#20263 missings
+
+library(dplyr)
+test <- test %>%
+  mutate(ESTRATO = ifelse(is.na(ESTRATO), estrato_texto, ESTRATO))
+sum(is.na(test$ESTRATO))#7108 missings
 
 ## 10. Limpiar base de missings restantes 
 
