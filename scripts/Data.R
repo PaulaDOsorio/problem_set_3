@@ -631,40 +631,41 @@ process_missings<-  function(data, ...) {
 
 test <- process_missings(test)
 
-#Nota: hasta aqui la base mantiene sus 38644 obs "originales"
+#Nota: hasta aqui la base mantiene sus 10286 obs "originales"
 
-## 11. Limpiar outliers restantes
+## 11. Limpiar outliers restantes (se omite esta parte para test, ya que hay que subir a kaggle
+#la totalidad de observaciones originales)
 
-## 11.1 outliers de piso
-test <- test %>%
-  filter(property_type== "Apartamento" & piso >= 0 & piso <= 25|
-           property_type== "Casa" & piso >= 0 & piso <= 6)
-#Nota: aquí la base va en 10258 obs
-
-## 11.2 outliers de habitaciones
-#nota:aquí la base cae a 10235
-p_load( visdat)
-vis_dat(test)
-
-test %>%
-  count(rooms)
-test <- test %>%
-  filter(between(rooms, 0,  20))
-
-test %>%
-  count(bedrooms)
-
-## 11.3 outliers de baños
-#nota:aquí la base cae a 10223
-test  %>%
-  count(bathrooms)
-test <- test %>%
-  filter(between(bathrooms, 0,  23))
-
-vis_dat(test, warn_large_data = FALSE)
-
-test <- test %>%
-  select(-surface_covered, -metraje, -alcobas,-bano)
+# ## 11.1 outliers de piso
+# test <- test %>%
+#   filter(property_type== "Apartamento" & piso >= 0 & piso <= 25|
+#            property_type== "Casa" & piso >= 0 & piso <= 6)
+# #Nota: aquí la base va en 10258 obs
+# 
+# ## 11.2 outliers de habitaciones
+# #nota:aquí la base cae a 10235
+# p_load( visdat)
+# vis_dat(test)
+# 
+# test %>%
+#   count(rooms)
+# test <- test %>%
+#   filter(between(rooms, 0,  20))
+# 
+# test %>%
+#   count(bedrooms)
+# 
+# ## 11.3 outliers de baños
+# #nota:aquí la base cae a 10223
+# test  %>%
+#   count(bathrooms)
+# test <- test %>%
+#   filter(between(bathrooms, 0,  23))
+# 
+# vis_dat(test, warn_large_data = FALSE)
+# 
+# test <- test %>%
+#   select(-surface_covered, -metraje, -alcobas,-bano)
 
 
 ################################## Variables Espaciales ###################################
