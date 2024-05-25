@@ -1,6 +1,6 @@
 setwd("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/scripts")
 
-rm(list = ls())
+#rm(list = ls())
 
 # - Librerias y paquetes 
 
@@ -16,6 +16,8 @@ p_load(tidyverse, # Manipular dataframes
        osmdata, # Get OSM's data 
        ranger,
        gmb,
+       glmnet, # To implement regularization algorithms. 
+       caret, # creating predictive models
        plotly) # Gráficos interactivos
 
 train_final<-read.csv("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/scripts/train_final.csv")
@@ -156,7 +158,7 @@ MAPE(y_pred = y_hat_outsample1, y_true = t_test$price)
 RMSE(y_pred = y_hat_outsample1, y_true = t_test$price)
 
 ## Modelo 2: Arbol de decision ##
-cv2 <- trainControl(number = 10, method = "cv")
+cv <- trainControl(number = 10, method = "cv")
 
 # especificamos la grilla de los alphas
 grid <- expand.grid(cp = seq(0, 0.03, 0.001))
@@ -167,7 +169,7 @@ modelo_arbol_decision <- train(price ~ rooms + bedrooms + parqueo + as.factor(ye
                                  distancia_comercial + distancia_banco,
                                data = t_train, 
                                method = "rpart", 
-                               trControl = cv2,
+                               trControl = cv,
                                tuneGrid = grid)
 modelo_arbol_decision
 
@@ -195,14 +197,19 @@ setwd("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/")
 write.csv(predictSample_rf,"stores/Prediction_Arbol_Decision.csv", row.names = FALSE)
 
 ## Modelo 3: GBM ##
-grid_gbm<-expand.grid(n.trees=1000,interaction.depth=5,shrinkage=0.01,n.minobsinnode = 20)
+#grid_gbm <- expand.grid(n.trees = c(500, 1000),
+#                        interaction.depth = c(4, 5, 6),
+#                        shrinkage = c(0.01, 0.1),
+#                        n.minobsinnode = c(10, 20))
+
+grid_gbm<-expand.grid(n.trees=1000,interaction.depth=5, shrinkage=0.01, n.minobsinnode = 20)
 modelo_GBM <- train(price ~ rooms + bedrooms + patio + remodel + iluminado + distancia_parque 
                     + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
                     + distancia_bus,
                     data = t_train, 
                     method = "gbm", 
                     trControl = cv1,
-                    metric = "RSME",
+                    metric = "MAE",
                     tuneGrid = grid_gbm
 )
 
@@ -215,7 +222,7 @@ MAPE(y_pred = y_hat_outsample3, y_true = t_test$price)
 RMSE(y_pred = y_hat_outsample3, y_true = t_test$price)
 
 ## Modelo 4: Ramdon Forest ##
-cv <- trainControl(method = "cv",number = 10,search = "grid")
+cv <- trainControl(method = "cv", number = 10, search = "grid")
 tunegrid_rf <- expand.grid(mtry = 5, 
                            min.node.size = 10,
                            splitrule = "variance")
@@ -231,6 +238,7 @@ modelo_Ramdon_Forest <- train(price ~ bedrooms + bathrooms + rooms + ascensor + 
                               tuneGrid = tunegrid_rf)
 
 modelo_Ramdon_Forest
+
 ## Métricas modelo Ramdon Forest
 y_hat_outsample4 = predict(modelo_Ramdon_Forest, newdata = t_test)
 MAE(y_pred = y_hat_outsample4, y_true = t_test$price)
@@ -255,8 +263,9 @@ setwd("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/")
 write.csv(predictSample_rf1,"stores/Prediction_Ramdon_Forest_F.csv", row.names = FALSE) ## ajustar predictSample_rf
 
 
-## Modelo 5: Ramdon Forest con mas varables de control ##
-modelo_RF2 <- train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + remodel + iluminado + piso
+## Modelo 5: Ramdon Forest con mas variables de control ##
+cv <- trainControl(method = "cv", number = 10, search = "grid")
+modelo_RF2 <- train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + remodel + parqueo + piso
                     + as.factor(property_type) + iluminado + distancia_parque 
                     + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
                     + distancia_bus,
@@ -267,6 +276,7 @@ modelo_RF2 <- train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + re
                     tuneGrid = tunegrid_rf)
 
 modelo_RF2
+
 ## Métricas Ramdon Forest con más varables de control
 y_hat_outsample5 = predict(modelo_RF2, newdata = t_test)
 MAE(y_pred = y_hat_outsample5, y_true = t_test$price)
@@ -290,4 +300,139 @@ setwd("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/")
 #predictSample_rf <- predictSample_rf %>% select(property_id, price)
 write.csv(predictSample_rf2,"stores/Prediction_RF_+controles.csv", row.names = FALSE)
 
+## Modelo 6: Regresión Lasso ##
+cv2 <- trainControl(method = "cv", number = 10, search = "grid")
 
+lambda_grid <- 10^seq(-4, 0.01, length = 200) 
+modelo_Lasso <- train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + parqueo + remodel + piso
+                      + as.factor(property_type) + iluminado + distancia_parque 
+                      + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
+                      + as.factor(year) + distancia_bus, 
+                      data = t_train, 
+                      method = "glmnet",
+                      trControl = cv2,
+                      metric = "MAE",
+                      tuneGrid = expand.grid(alpha = 1,lambda=lambda_grid), 
+                      preProcess = c("center", "scale")
+)
+
+modelo_Lasso
+print(modelo_Lasso)
+
+## Métricas modelo Regresión Lasso
+y_hat_outsample6 = predict(modelo_Lasso, newdata = t_test)
+MAE(y_pred = y_hat_outsample6, y_true = t_test$price)
+MAPE(y_pred = y_hat_outsample6, y_true = t_test$price)
+RMSE(y_pred = y_hat_outsample6, y_true = t_test$price)
+
+## Modelo 7: Regresión Ridge ##
+cv2 <- trainControl(method = "cv", number = 10, search = "grid")
+lambda_grid <- 10^seq(-4, 0.01, length = 200)
+modelo_Ridge <- train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + remodel + parqueo + piso
+                      + as.factor(property_type) + iluminado + distancia_parque 
+                      + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
+                      + as.factor(year) + distancia_bus, 
+                      data = t_train, 
+                      method = "glmnet",
+                      trControl = cv2,
+                      metric = "MAE",
+                      tuneGrid = expand.grid(alpha = 0,lambda=lambda_grid), 
+                      preProcess = c("center", "scale")
+)
+
+modelo_Ridge 
+
+## Métricas modelo Regresión Ridge
+y_hat_outsample7 = predict(modelo_Ridge, newdata = t_test)
+MAE(y_pred = y_hat_outsample7, y_true = t_test$price)
+MAPE(y_pred = y_hat_outsample7, y_true = t_test$price)
+RMSE(y_pred = y_hat_outsample7, y_true = t_test$price)
+
+######
+install.packages("doParallel")
+library(doParallel)
+registerDoParallel(cores = detectCores())  # Registra todos los núcleos disponibles
+#cv2 <- trainControl(method = "cv", number = 10, search = "grid", allowParallel = TRUE)
+
+## Modelo 8: Random Forest & Expansion grid ##
+cv2 <- trainControl(method = "cv", number = 10,search = "grid")
+tunegrid_rf2 <- expand.grid(mtry = 8)
+
+modelo_RF_Grid <- train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + remodel + parqueo + piso
+                        + as.factor(property_type) + iluminado + distancia_parque 
+                        + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
+                        + as.factor(year) + distancia_bus,
+                        data = t_train,
+                        method = "rf", 
+                        trControl = cv2,
+                        tuneGrid = tunegrid_rf2,
+                        metric = 'MAE',
+                        ntree = 200
+)
+
+modelo_RF_Grid
+
+## Métricas modelo Random Forest & Expansion grid
+y_hat_outsample8 = predict(modelo_RF_Grid, newdata = t_test)
+MAE(y_pred = y_hat_outsample8, y_true = t_test$price)
+MAPE(y_pred = y_hat_outsample8, y_true = t_test$price)
+RMSE(y_pred = y_hat_outsample8, y_true = t_test$price)
+
+
+## Preparando envio a Kaggle modelo Random Forest & Expansion grid##
+
+predictSample_rf3 <- test_final   %>% 
+  mutate(price = predict(modelo_RF_Grid, newdata = test_final, type = "raw")    ## predicted precio de la vivienda 
+  )  %>% select(property_id, price)
+
+head(predictSample_rf3)
+
+#Es consistente con el template
+template<-read.csv("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/scripts/submission_template.csv")
+
+head(template)
+setwd("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/")
+
+#predictSample_rf <- predictSample_rf %>% select(property_id, price)
+write.csv(predictSample_rf3,"stores/Prediction_RF_Grid.csv", row.names = FALSE)
+
+
+## Modelo 9: Elastic Net ##
+modelo_Elastic_Net <-train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + remodel + parqueo + piso
+                           + precio_por_mt2 + iluminado + ascensor + distancia_parque 
+                           + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
+                           + as.factor(year) + distancia_bus,
+                           data=t_train,
+                           method = 'glmnet', 
+                           trControl = cv2,
+                           tuneGrid = expand.grid(alpha = seq(0,1, by = 0.1), 
+                                                  lambda = seq(0.001,0.02,by = 0.001)),
+                           preProcess = c("center", "scale")
+) 
+
+modelo_Elastic_Net
+
+## Métricas modelo Elastic Net 
+y_hat_outsample9 <- predict(modelo_Elastic_Net, newdata = t_test)
+MAE(y_pred = y_hat_outsample9, y_true = t_test$price)
+MAPE(y_pred = y_hat_outsample9, y_true = t_test$price)
+RMSE(y_pred = y_hat_outsample9, y_true = t_test$price)
+
+## Modelo 10: Bagging ##
+
+p_load(ipred)
+modelo_Bagging <- bagging(price ~ bedrooms + bathrooms + rooms + ascensor + patio + remodel + parqueo + piso
+                          + precio_por_mt2 + iluminado + ascensor + distancia_parque 
+                          + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
+                          + distancia_bus,
+                          data  = t_train, nbagg = 500)
+
+modelo_Bagging
+
+## Métricas modelo Bagging
+y_hat_outsample10 <- predict(modelo_Bagging, newdata = t_test)
+MAE(y_pred = y_hat_outsample10, y_true = t_test$price)
+MAPE(y_pred = y_hat_outsample10, y_true = t_test$price)
+RMSE(y_pred = y_hat_outsample10, y_true = t_test$price)
+
+## Luego de correr varios modelos, el mejor modelo resultante es el modelo 8: Random Forest & Expansion grid 
