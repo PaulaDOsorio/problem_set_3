@@ -1,18 +1,10 @@
-# Problem Set Template Repository for Big Data and Machine Learning for Applied Economics
+# Problem Set 3: Making Money with ML? "It's all about location location location!!!"
 
-This is the template repository for the problem sets.
+Este REDME da el paso a paso de como está organizada la carpera que contiene los resultados del Problem Set 3 del equipo 7
 
-The repo should contain at least four folders:
+- `document`: En esta carpeta de encuentra el documento en `pdf` del trabajo final.
+- `scripts`: En esta carpeta se encuentran alojado el código del taller dividido por items.
+- `views`: En está carpeta se encuentran todas las tablas y gráficas que se describen el el documento del taller.
+- `stores`: Esta carpeta contiene bases de datos iniciales y limpias, así como los resultado de las mejores predicciones de los modelos cargados en Kaggle.
 
-- `document`: contains your final document in `pdf` format. Ideally, the document should pull figures and tables directly from the `views` folder. I've included a latex template I created for the Thesis Seminar. 
-- `scripts`: contains all your scripts
-- `stores`: contains all the data sets used. If files are "too big" for GitHub, include a document describing where people can access the data.
-- `views`: contains all figures and tables
-
-
-
-## Some general reminders: 
-
-- It is essential how you write up the document. Be sure to be organized and consistent in explaining your equations and findings. Make sure that there are no compilation errors.
-- Write understandable code, separating and commenting on each section. Coding, like in writing, style is critical for readability. If the code is well written, it should be self-contained. There is no need to write everything you did. I encourage you to follow the [tidyverse style guide](https://style.tidyverse.org/)
-
+ La Ruta del Github que lleva a los resultados del Problem Set 3 es [tidyverse style guide](https://github.com/PaulaDOsorio/problem_set_3)
