@@ -7,4 +7,4 @@ Este REDME da el paso a paso de como está organizada la carpera que contiene lo
 - `views`: En está carpeta se encuentran todas las tablas y gráficas que se describen el el documento del taller.
 - `stores`: Esta carpeta contiene bases de datos iniciales y limpias, así como los resultado de las mejores predicciones de los modelos cargados en Kaggle.
 
- La Ruta del Github que lleva a los resultados del Problem Set 3 es [[tidyverse style guide]](https://github.com/PaulaDOsorio/problem_set_3)(https://github.com/PaulaDOsorio/problem_set_3)
+ La Ruta del Github que lleva a los resultados del Problem Set 3 es [https://github.com/PaulaDOsorio/problem_set_3](https://github.com/PaulaDOsorio/problem_set_3)
