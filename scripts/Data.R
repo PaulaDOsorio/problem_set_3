@@ -442,11 +442,16 @@ stargazer(train["precio_por_mt2"],type="text")
 train <- train %>%
   filter(between(precio_por_mt2, 0.10,  20))
 
+#7.5 dejar base definitiva
 train <- train %>%
   select(-surface_covered, -metraje, -alcobas,-bano, -FID,-OBJECTID,-CODIGO_MAN,-CODIGO_ZON,-CODIGO_CRI,
          -NORMATIVA,-ACTO_ADMIN,-NUMERO_ACT,-FECHA_ACTO,-ESCALA_CAP,-FECHA_CAPT,-RESPONSABL,-SHAPE_AREA,
          -SHAPE_LEN,-estrato_texto,-description_estrato,-description,-title)
 vis_dat(train, warn_large_data = FALSE)
+
+train<- as.data.frame(train)
+train$geometry <- NULL
+write.csv(train, file = "train_final_estrato.csv", row.names = FALSE)
 
 ######################## Cambios a para base test ########################################################
 test<-read.csv("test.csv")
@@ -480,24 +485,6 @@ reemplazar_numeros <- function(texto) {
 test$description_num<-reemplazar_numeros(test$description)
 
 ## 8.2 extraer metraje
-a1 <- "[:space:]+[:digit:]+metros" 
-a2 <- "[:space:]+[:digit:]+mts"
-a3 <- "[:space:]+[:digit:]+mts2"
-a4 <- "[:space:]+[:digit:]+mt"
-a5 <- "[:space:]+[:digit:]+m2" 
-a6 <- "[:space:]+[:digit:]+mt2"
-b1 <- "[:space:]+[:digit:]+[:space:]+metros" 
-b2 <- "[:space:]+[:digit:]+[:space:]+mts"
-b3 <- "[:space:]+[:digit:]+[:space:]+mts2"
-b4 <- "[:space:]+[:digit:]+[:space:]+mt" 
-b5 <- "[:space:]+[:digit:]+[:space:]+m2"
-b6 <- "[:space:]+[:digit:]+[:space:]+mt2"
-c1 <- "[:space:]+[:digit:]+[:punct:]+[:digit:]+[:space:]+metros" 
-c2 <- "[:space:]+[:digit:]+[:punct:]+[:digit:]+[:space:]+mts"
-c3 <- "[:space:]+[:digit:]+[:punct:]+[:digit:]+[:space:]+mts2"
-c4 <- "[:space:]+[:digit:]+[:punct:]+[:digit:]+[:space:]+mt" 
-c5 <- "[:space:]+[:digit:]+[:punct:]+[:digit:]+[:space:]+m2"
-c6 <- "[:space:]+[:digit:]+[:punct:]+[:digit:]+[:space:]+mt2"
 
 test<-test %>% mutate(metraje = str_extract(string = test$description_num,
                                             pattern =  paste0(a1,"|",a2,"|",a3,"|",a4,"|",a5,"|",a6,"|",
@@ -507,30 +494,6 @@ test$metraje<- as.numeric(gsub("[^0-9]", "", test$metraje))
 
 
 ## 8.3 habitaciones/alcobas/dormitorios
-d1 <-"[:digit:]+alcobas"
-d2 <-"[:digit:]+habitaciones"
-d3 <-"[:digit:]+dormitorios"
-d4 <-"[:digit:]+habitacion"
-d5 <-"[:digit:]+alcoba"
-d6 <-"[:digit:]+dormitorio"
-d7 <-"[:digit:]+habitacin"
-d8 <-"[:digit:]+cuartos"
-e1 <-"[:space:]+[:digit:]+alcobas"
-e2 <-"[:space:]+[:digit:]+habitaciones"
-e3 <-"[:space:]+[:digit:]+dormitorios"
-e4 <-"[:space:]+[:digit:]+habitacion"
-e5 <-"[:space:]+[:digit:]+alcoba"
-e6 <-"[:space:]+[:digit:]+dormitorio"
-e7 <-"[:space:]+[:digit:]+habitacin"
-e8 <-"[:space:]+[:digit:]+cuartos"
-f1 <-"[:space:]+[:digit:]+[:space:]+alcobas"
-f2 <-"[:space:]+[:digit:]+[:space:]+habitaciones"
-f3 <-"[:space:]+[:digit:]+[:space:]+dormitorios"
-f4 <-"[:space:]+[:digit:]+[:space:]+habitacion"
-f5 <-"[:space:]+[:digit:]+[:space:]+alcoba"
-f6 <-"[:space:]+[:digit:]+[:space:]+dormitorio"
-f7 <-"[:space:]+[:digit:]+[:space:]+habitacin"
-f8 <-"[:space:]+[:digit:]+[:space:]+cuartos"
 
 test<-test %>% mutate(alcobas = str_extract(string = test$description_num,
                                             pattern =  paste0(d1,"|",d2,"|",d3,"|",d4,"|",d5,"|",d6,"|",d7,"|",d8,"|",
@@ -539,18 +502,6 @@ test<-test %>% mutate(alcobas = str_extract(string = test$description_num,
 test$alcobas<- as.numeric(gsub("[^0-9]", "", test$alcobas))
 
 ## 8.4 baños
-g1 <-"[:digit:]+bano"
-g2 <-"[:digit:]+banos"
-g3 <-"[:digit:]+baos"
-g4 <-"[:digit:]+bao"
-h1 <-"[:space:]+[:digit:]+bano"
-h2 <-"[:space:]+[:digit:]+banos"
-h3 <-"[:space:]+[:digit:]+baos"
-h4 <-"[:space:]+[:digit:]+bao"
-i1 <-"[:space:]+[:digit:]+[:space:]+bano"
-i2 <-"[:space:]+[:digit:]+[:space:]+banos"
-i3 <-"[:space:]+[:digit:]+[:space:]+baos"
-i4 <-"[:space:]+[:digit:]+[:space:]+bao"
 test<-test %>% mutate(bano = str_extract(string = test$description_num,
                                          pattern =  paste0(g1,"|",g2,"|",g3,"|",g4,"|",
                                                            h1,"|",h2,"|",h3,"|",h4,"|",
@@ -705,12 +656,12 @@ test$estrato_texto<- as.numeric(gsub("[^0-9]", "", test$estrato_texto))
 
 
 #revisar missings de estrato a partir de descripción
-sum(is.na(test$estrato_texto))#20263 missings
+sum(is.na(test$estrato_texto))#9102 missings
 
 library(dplyr)
 test <- test %>%
   mutate(ESTRATO = ifelse(is.na(ESTRATO), estrato_texto, ESTRATO))
-sum(is.na(test$ESTRATO))#7108 missings
+sum(is.na(test$ESTRATO))#2807 missings
 
 ## 10. Limpiar base de missings restantes 
 
@@ -719,6 +670,7 @@ sum(is.na(test$ESTRATO))#7108 missings
 #identificar nuevas medias
 #mediana_sup_cubierta <- median(test$surface_covered, na.rm = TRUE)
 mediana_sup_total<- median(test$surface_total, na.rm = TRUE)
+mediana_estrato<- median(test$ESTRATO, na.rm = TRUE)
 stargazer(test,type="text")
 
 test %>%
@@ -739,8 +691,8 @@ process_missings<-  function(data, ...) {
   
   data <- data %>%
     mutate(rooms = replace_na(rooms, 3),
-           bedrooms = replace_na(bedrooms, 2),
            bathrooms = replace_na(bathrooms, 3),
+           ESTRATO=replace_na(ESTRATO,mediana_estrato),
            #surface_covered = replace_na(surface_covered, mediana_sup_cubierta),
            surface_total = replace_na(surface_total, mediana_sup_total),
     )
@@ -780,10 +732,17 @@ test <- process_missings(test)
 #   filter(between(bathrooms, 0,  23))
 # 
 # vis_dat(test, warn_large_data = FALSE)
-# 
-# test <- test %>%
-#   select(-surface_covered, -metraje, -alcobas,-bano)
 
+#11.4 dejar base definitiva
+test <- test %>%
+  select(-surface_covered, -metraje, -alcobas,-bano, -FID,-OBJECTID,-CODIGO_MAN,-CODIGO_ZON,-CODIGO_CRI,
+         -NORMATIVA,-ACTO_ADMIN,-NUMERO_ACT,-FECHA_ACTO,-ESCALA_CAP,-FECHA_CAPT,-RESPONSABL,-SHAPE_AREA,
+         -SHAPE_LEN,-estrato_texto,-description_estrato)
+
+test <- as.data.frame(test)
+test$geometry <- NULL
+
+write.csv(test, file = "test_final_estrato.csv", row.names = FALSE)
 
 ################################## Variables Espaciales ###################################
 
