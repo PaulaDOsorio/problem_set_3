@@ -325,6 +325,24 @@ MAE(y_pred = y_hat_outsample6, y_true = t_test$price)
 MAPE(y_pred = y_hat_outsample6, y_true = t_test$price)
 RMSE(y_pred = y_hat_outsample6, y_true = t_test$price)
 
+#Preparando envio a Kaggle modelo Regresión Lasso
+
+predictSample_rf4 <- test_final   %>% 
+  mutate(price = predict(modelo_Lasso, newdata = test_final, type = "raw")    ## predicted precio de la vivienda 
+  )  %>% select(property_id, price)
+
+head(predictSample_rf4)
+
+#Es consistente con el template
+template<-read.csv("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/scripts/submission_template.csv")
+
+head(template)
+setwd("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/")
+
+#predictSample_rf <- predictSample_rf %>% select(property_id, price)
+write.csv(predictSample_rf4,"stores/Prediction_Lasso.csv", row.names = FALSE)
+
+
 ## Modelo 7: Regresión Ridge ##
 cv2 <- trainControl(method = "cv", number = 10, search = "grid")
 lambda_grid <- 10^seq(-4, 0.01, length = 200)
@@ -435,4 +453,33 @@ MAE(y_pred = y_hat_outsample10, y_true = t_test$price)
 MAPE(y_pred = y_hat_outsample10, y_true = t_test$price)
 RMSE(y_pred = y_hat_outsample10, y_true = t_test$price)
 
+
+## Preparando envio a Kaggle modelo Bagging ##
+
+predictSample_rf5 <- test_final   %>% 
+  mutate(price = predict(modelo_Bagging, newdata = test_final, type = "raw")    ## predicted precio de la vivienda 
+  )  %>% select(property_id, price)
+
+head(predictSample_rf5)
+
+#Es consistente con el template
+template<-read.csv("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/scripts/submission_template.csv")
+
+head(template)
+setwd("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/")
+
+#predictSample_rf <- predictSample_rf %>% select(property_id, price)
+write.csv(predictSample_rf5,"stores/Prediction_Bagging.csv", row.names = FALSE)
+
 ## Luego de correr varios modelos, el mejor modelo resultante es el modelo 8: Random Forest & Expansion grid 
+mejor_modelo = modelo_RF_Grid
+y_predict <- predict(mejor_modelo, newdata = test_final)
+
+mejormodelo <- data.frame(
+  property_id = test_final$property_id,
+  price = y_predict     
+)
+mejormodelo
+write.csv(mejormodelofinal, "C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/mejormodelofinal.csv", row.names =  FALSE)
+
+################
