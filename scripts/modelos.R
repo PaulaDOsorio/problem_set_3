@@ -20,9 +20,12 @@ p_load(tidyverse, # Manipular dataframes
        caret, # creating predictive models
        plotly) # Gráficos interactivos
 
-train_final<-read.csv("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/scripts/train_final.csv")
-test_final<-read.csv("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/scripts/test_final.csv")
+#train_final<-read.csv("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/scripts/train_final.csv")
+#test_final<-read.csv("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/scripts/test_final.csv")
 
+## Probando con la variable estrato ##
+train_final<-read.csv("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/scripts/train_final_estrato_sin_ms.csv")
+test_final<-read.csv("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/scripts/test_final_estrato_sin_ms.csv")
 
 #train_final$remodel <- as.factor(train_final$remodel)
 #train_final$ascensor <-  as.factor(train_final$ascensor)
@@ -46,8 +49,8 @@ missing2 <- is.na(train_final$price)
 sum(missing2)
 
 
-#Partir la base de Train en 2: t_train y t_test 
-p_load(caret)
+# Partimos la base de Train final en 2: t_train y t_test 
+
 set.seed(1234)
 
 inTrain <- createDataPartition(
@@ -144,7 +147,7 @@ p_load(MLmetrics)
 cv1 <- trainControl(number = 5, method = "cv")
 
 modelo_lm <- train(price ~ bedrooms + parqueo + as.factor(year) + patio  + distancia_parque + distancia_escuela 
-                   + distancia_estacion + distancia_comercial, 
+                   + distancia_estacion + distancia_comercial + as.factor(ESTRATO), 
                    data = t_train, 
                    method = "lm",
                    trControl = cv1
@@ -166,7 +169,7 @@ grid <- expand.grid(cp = seq(0, 0.03, 0.001))
 modelo_arbol_decision <- train(price ~ rooms + bedrooms + parqueo + as.factor(year) + as.factor(property_type) 
                                + patio + remodel + iluminado + distancia_parque 
                                + distancia_escuela + distancia_estacion + 
-                                 distancia_comercial + distancia_banco,
+                                 distancia_comercial + distancia_banco + ESTRATO,
                                data = t_train, 
                                method = "rpart", 
                                trControl = cv,
@@ -205,7 +208,7 @@ write.csv(predictSample_rf,"stores/Prediction_Arbol_Decision.csv", row.names = F
 grid_gbm<-expand.grid(n.trees=1000,interaction.depth=5, shrinkage=0.01, n.minobsinnode = 20)
 modelo_GBM <- train(price ~ rooms + bedrooms + patio + remodel + iluminado + distancia_parque 
                     + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
-                    + distancia_bus,
+                    + distancia_bus + ESTRATO,
                     data = t_train, 
                     method = "gbm", 
                     trControl = cv1,
@@ -230,7 +233,7 @@ tunegrid_rf <- expand.grid(mtry = 5,
 modelo_Ramdon_Forest <- train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + remodel 
                               + as.factor(year) + as.factor(property_type) + iluminado + distancia_parque 
                               + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
-                              + distancia_bus, 
+                              + distancia_bus + ESTRATO, 
                               data = t_train,
                               method = "ranger", 
                               trControl = cv,
@@ -268,7 +271,7 @@ cv <- trainControl(method = "cv", number = 10, search = "grid")
 modelo_RF2 <- train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + remodel + parqueo + piso
                     + as.factor(property_type) + iluminado + distancia_parque 
                     + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
-                    + distancia_bus,
+                    + distancia_bus + ESTRATO,
                     data = t_train, 
                     method = "ranger", 
                     trControl = cv,
@@ -298,7 +301,8 @@ head(template)
 setwd("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/")
 
 #predictSample_rf <- predictSample_rf %>% select(property_id, price)
-write.csv(predictSample_rf2,"stores/Prediction_RF_+controles.csv", row.names = FALSE)
+#write.csv(predictSample_rf2,"stores/Prediction_RF_+controles.csv", row.names = FALSE)
+write.csv(predictSample_rf2,"stores/Prediction_RF_+controles_F.csv", row.names = FALSE)
 
 ## Modelo 6: Regresión Lasso ##
 cv2 <- trainControl(method = "cv", number = 10, search = "grid")
@@ -307,7 +311,7 @@ lambda_grid <- 10^seq(-4, 0.01, length = 200)
 modelo_Lasso <- train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + parqueo + remodel + piso
                       + as.factor(property_type) + iluminado + distancia_parque 
                       + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
-                      + as.factor(year) + distancia_bus, 
+                      + as.factor(year) + distancia_bus + ESTRATO, 
                       data = t_train, 
                       method = "glmnet",
                       trControl = cv2,
@@ -349,7 +353,7 @@ lambda_grid <- 10^seq(-4, 0.01, length = 200)
 modelo_Ridge <- train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + remodel + parqueo + piso
                       + as.factor(property_type) + iluminado + distancia_parque 
                       + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
-                      + as.factor(year) + distancia_bus, 
+                      + as.factor(year) + distancia_bus + ESTRATO, 
                       data = t_train, 
                       method = "glmnet",
                       trControl = cv2,
@@ -379,7 +383,7 @@ tunegrid_rf2 <- expand.grid(mtry = 8)
 modelo_RF_Grid <- train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + remodel + parqueo + piso
                         + as.factor(property_type) + iluminado + distancia_parque 
                         + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
-                        + as.factor(year) + distancia_bus,
+                        + as.factor(year) + distancia_bus + ESTRATO,
                         data = t_train,
                         method = "rf", 
                         trControl = cv2,
@@ -412,14 +416,16 @@ head(template)
 setwd("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/")
 
 #predictSample_rf <- predictSample_rf %>% select(property_id, price)
-write.csv(predictSample_rf3,"stores/Prediction_RF_Grid.csv", row.names = FALSE)
+#write.csv(predictSample_rf3,"stores/Prediction_RF_Grid.csv", row.names = FALSE)
+write.csv(predictSample_rf3,"stores/Prediction_RF_Grid_F.csv", row.names = FALSE)
+#write.csv(predictSample_rf3,"stores/Prediction_RF_Grid_VF.csv", row.names = FALSE)
 
 
 ## Modelo 9: Elastic Net ##
 modelo_Elastic_Net <-train(price ~ bedrooms + bathrooms + rooms + ascensor + patio + remodel + parqueo + piso
-                           + precio_por_mt2 + iluminado + ascensor + distancia_parque 
+                           + iluminado + ascensor + distancia_parque 
                            + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
-                           + as.factor(year) + distancia_bus,
+                           + as.factor(year) + distancia_bus + ESTRATO,
                            data=t_train,
                            method = 'glmnet', 
                            trControl = cv2,
@@ -440,9 +446,9 @@ RMSE(y_pred = y_hat_outsample9, y_true = t_test$price)
 
 p_load(ipred)
 modelo_Bagging <- bagging(price ~ bedrooms + bathrooms + rooms + ascensor + patio + remodel + parqueo + piso
-                          + precio_por_mt2 + iluminado + ascensor + distancia_parque 
+                          + iluminado + ascensor + distancia_parque 
                           + distancia_escuela + distancia_estacion + distancia_comercial + distancia_banco
-                          + distancia_bus,
+                          + distancia_bus + ESTRATO,
                           data  = t_train, nbagg = 500)
 
 modelo_Bagging
@@ -469,17 +475,20 @@ head(template)
 setwd("C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/")
 
 #predictSample_rf <- predictSample_rf %>% select(property_id, price)
-write.csv(predictSample_rf5,"stores/Prediction_Bagging.csv", row.names = FALSE)
+#write.csv(predictSample_rf5,"stores/Prediction_Bagging.csv", row.names = FALSE)
+write.csv(predictSample_rf5,"stores/Prediction_Bagging_F.csv", row.names = FALSE)
 
-## Luego de correr varios modelos, el mejor modelo resultante es el modelo 8: Random Forest & Expansion grid 
+## Luego de correr varios modelos, el mejor modelo resultante es el modelo 7: Random Forest & Expansion grid 
+# es el que resultó con el MAE más bajo de 114992066
 mejor_modelo = modelo_RF_Grid
 y_predict <- predict(mejor_modelo, newdata = test_final)
 
-mejormodelo <- data.frame(
+mejormodelofinal <- data.frame(
   property_id = test_final$property_id,
   price = y_predict     
 )
-mejormodelo
-write.csv(mejormodelofinal, "C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/mejormodelofinal.csv", row.names =  FALSE)
+mejormodelofinal
+write.csv(mejormodelofinal, "C:/Users/sandr/Documents/GitHub/BIG DATA/Taller3/stores/mejormodelofinal.csv", row.names =  FALSE)
 
 ################
+
