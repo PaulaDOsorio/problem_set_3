@@ -3,8 +3,8 @@ rm(list=ls())
 
 #setwd("C:/Users/USUARIO/Documents/GitHub/problem_set_3/scripts")
 
-train<-read.csv("C:/Users/USUARIO/Documents/GitHub/problem_set_3/scripts/train.csv")
-test<-read.csv("C:/Users/USUARIO/Documents/GitHub/problem_set_3/scripts/test.csv")
+train<-read.csv("scripts/train.csv")
+test<-read.csv("scripts/test.csv")
 
 #1. Cargar las librerías 
 library(pacman) 
@@ -1139,10 +1139,10 @@ localidad <- "Chapinero"
 ciudad <- "Bogotá"
 
 #Consultar los datos en OMS para los límites de la localidad
-query <- paste0(localidad, ",",ciudad)
-Chapinero <- opq(query)  %>%
-  add_osm_feature(key = "boundary", value = "administrative") %>%
-  osmdata_sf()
+# query <- paste0(localidad, ",",ciudad)
+# Chapinero <- opq(query)  %>%
+#   add_osm_feature(key = "boundary", value = "administrative") %>%
+#   osmdata_sf()
 
 #Extraer limites
 Chapinero_bbox <- st_bbox(limites_Chapinero)
@@ -1202,3 +1202,4 @@ ggplot() +
   theme_minimal() +
   labs(title = "Datos filtrados dentro de Chapinero, Bogotá",
        x = "Longitud", y = "Latitud")
+
