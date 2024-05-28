@@ -1,4 +1,9 @@
-#Problem set_3 Predecir el precio de las propiedades
+############################################
+########## Problem set 1            ########
+###### Big Data y Maching Learning #########
+###### Paula Osorio:201327186   ############
+
+
 #Organizar base de datos
 rm(list=ls())
 
