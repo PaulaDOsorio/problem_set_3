@@ -2,6 +2,8 @@
 ########## Problem set 1            ########
 ###### Big Data y Maching Learning #########
 ###### Paula Osorio:201327186   ############
+###### Sandra Gamarra: 202225782 ###########
+###### Erika M. Macías:  Educacion continua#
 
 
 #Organizar base de datos
