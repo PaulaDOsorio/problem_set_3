@@ -4,7 +4,8 @@
 ###### Paula Osorio:201327186   ############
 ###### Sandra Gamarra: 202225782 ###########
 ###### Erika M. Macías:  Educacion continua#
-
+###### Ingrith Sierra: 201720654    ########
+############################################
 
 #Organizar base de datos
 rm(list=ls())
