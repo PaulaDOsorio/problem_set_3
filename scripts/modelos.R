@@ -389,7 +389,7 @@ modelo_RF_Grid <- train(price ~ bedrooms + bathrooms + rooms + ascensor + patio 
                         trControl = cv2,
                         tuneGrid = tunegrid_rf2,
                         metric = 'MAE',
-                        ntree = 300 #200
+                        ntree = 200 #300
 )
 
 modelo_RF_Grid
