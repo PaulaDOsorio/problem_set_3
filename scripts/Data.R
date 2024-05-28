@@ -4,8 +4,8 @@ rm(list=ls())
 
 #setwd("C:/Users/USUARIO/Documents/GitHub/problem_set_3/scripts")
 
-train<-read.csv("scripts/train.csv")
-test<-read.csv("scripts/test.csv")
+train<-read.csv("C:/Users/USUARIO/Documents/GitHub/problem_set_3/scripts/train.csv")
+test<-read.csv("C:/Users/USUARIO/Documents/GitHub/problem_set_3/scripts/test.csv")
 
 #1. Cargar las librerías 
 library(pacman) 
